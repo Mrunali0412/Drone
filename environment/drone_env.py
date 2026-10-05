@@ -71,6 +71,15 @@ class DroneCommunicationEnvironment:
         # Path-loss exponent
         self.path_loss_exponent = 2.5
 
+        self.num_rrbs = 2
+
+        self.average_throughput = {
+            0: 1.0,
+            1: 1.0,
+            2: 1.0,
+            3: 1.0
+        }
+
 
     def calculate_drone_metrics(self, drone_id):
 
@@ -99,6 +108,28 @@ class DroneCommunicationEnvironment:
             self.path_loss_exponent
         )
 
+
+        def calculate_channel_gains(self):
+            channel_gains = {}
+
+            for drone_id, drone_position in self.drones.items():
+
+                serving_oru = self.association[drone_id]
+                oru_position = self.orus[serving_oru]
+
+                distance = calculate_distance(
+                    drone_position,
+                    oru_position
+                )
+
+                channel_gain = calculate_channel_gain(
+                    distance,
+                    self.path_loss_exponent
+                )
+
+                channel_gains[drone_id] = channel_gain
+
+            return channel_gains
         # --------------------------------
         # Desired signal
         # --------------------------------
