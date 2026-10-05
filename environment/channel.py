@@ -29,6 +29,30 @@ def calculate_channel_gain(distance, path_loss_exponent=2.5):
     return gain
 
 
+def calculate_channel_gains(self):
+
+    channel_gains = {}
+
+    for drone_id, drone_position in self.drones.items():
+
+        serving_oru = self.association[drone_id]
+
+        oru_position = self.orus[serving_oru]
+
+        distance = calculate_distance(
+            drone_position,
+            oru_position
+        )
+
+        gain = calculate_channel_gain(
+            distance,
+            self.path_loss_exponent
+        )
+
+        channel_gains[drone_id] = gain
+
+    return channel_gains
+
 def calculate_received_power(transmit_power, channel_gain):
     """
     Received power = transmit power × channel gain

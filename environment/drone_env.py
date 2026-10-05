@@ -7,6 +7,7 @@ from environment.channel import (
 )
 
 from environment.rate import calculate_fbl_rate
+from environment.scheduler import proportional_fair_scheduler
 
 
 class DroneCommunicationEnvironment:
@@ -151,6 +152,20 @@ class DroneCommunicationEnvironment:
             "sinr": sinr,
             "rate": rate
         }
+
+    def schedule_rrbs(self):
+
+        channel_gains = self.calculate_channel_gains()
+
+        rrb_assignment = proportional_fair_scheduler(
+            drones=self.drones,
+            association=self.association,
+            channel_gains=channel_gains,
+            drone_powers=self.drone_powers,
+            noise_power=self.noise_power,
+            average_throughput=self.average_throughput,
+            num_rrbs=self.num_rrbs
+        )
 
 
     def calculate_all_metrics(self):
