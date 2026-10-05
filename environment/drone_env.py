@@ -70,6 +70,11 @@ class DroneCommunicationEnvironment:
             3: 0.1
         }
 
+        self.min_power = 0.01   # W
+        self.max_power = 0.5    # W
+        self.min_rate = 1e5   # bits/s
+        self.max_interference = 2e-7
+
         # Path-loss exponent
         self.path_loss_exponent = 2.5
 
@@ -81,6 +86,8 @@ class DroneCommunicationEnvironment:
             2: 1.0,
             3: 1.0
         }
+
+       
 
 
     def calculate_drone_metrics(self, drone_id):
@@ -222,7 +229,7 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # C1: Power constraint
         # --------------------------------
-
+  
         power_constraint = (
             self.min_power <= power <= self.max_power
         )
