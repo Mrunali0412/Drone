@@ -65,6 +65,8 @@ def calculate_received_power(transmit_power, channel_gain):
 
     return transmit_power * channel_gain
 
+
+
 def calculate_interference(
     target_oru,
     serving_drone,
@@ -100,16 +102,13 @@ def calculate_interference(
             path_loss_exponent
         )
 
-        received_power = calculate_received_power(
-            transmit_power,
-            gain
-        )
+        received_power = transmit_power * gain
 
         interference += received_power
 
     return interference
 
-#drone to other O-RU
+
 def calculate_interference_to_neighbors(
     drone_id,
     drones,
@@ -126,14 +125,11 @@ def calculate_interference_to_neighbors(
     """
 
     serving_oru = association[drone_id]
-
     interference_to_neighbors = {}
-
     drone_position = drones[drone_id]
 
     for oru_id, oru_position in orus.items():
 
-        # Do not consider the serving O-RU
         if oru_id == serving_oru:
             continue
 
@@ -147,11 +143,7 @@ def calculate_interference_to_neighbors(
             path_loss_exponent
         )
 
-        interference = calculate_received_power(
-            drone_powers[drone_id],
-            gain
-        )
-
+        interference = drone_powers[drone_id] * gain
         interference_to_neighbors[oru_id] = interference
 
     return interference_to_neighbors

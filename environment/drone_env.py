@@ -52,11 +52,8 @@ class DroneCommunicationEnvironment:
         # --------------------------------
 
         self.bandwidth = 180e3
-
         self.blocklength = 200
-
         self.error_probability = 1e-5
-
         self.noise_power = 1e-9
 
         # --------------------------------
@@ -72,7 +69,7 @@ class DroneCommunicationEnvironment:
 
         self.min_power = 0.01   # W
         self.max_power = 0.5    # W
-        self.min_rate = 1e5   # bits/s
+        self.min_rate = 1e5     # bits/s
         self.max_interference = 2e-7
 
         # Path-loss exponent
@@ -87,22 +84,17 @@ class DroneCommunicationEnvironment:
             3: 1.0
         }
 
-       
-
-
     def calculate_drone_metrics(self, drone_id):
 
         # Which O-RU serves this drone?
         serving_oru = self.association[drone_id]
 
         drone_position = self.drones[drone_id]
-
         oru_position = self.orus[serving_oru]
 
         # --------------------------------
         # Distance
         # --------------------------------
-
         distance = calculate_distance(
             drone_position,
             oru_position
@@ -111,16 +103,14 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # Channel gain
         # --------------------------------
-    
         channel_gain = calculate_channel_gain(
             distance,
             self.path_loss_exponent
         )
-        
+
         # --------------------------------
         # Desired signal
         # --------------------------------
-
         signal_power = calculate_received_power(
             self.drone_powers[drone_id],
             channel_gain
@@ -129,7 +119,6 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # Interference
         # --------------------------------
-
         interference = calculate_interference(
             target_oru=serving_oru,
             serving_drone=drone_id,
@@ -139,8 +128,6 @@ class DroneCommunicationEnvironment:
             path_loss_exponent=self.path_loss_exponent
         )
 
-
-
         interference_to_neighbors = calculate_interference_to_neighbors(
             drone_id=drone_id,
             drones=self.drones,
@@ -149,10 +136,10 @@ class DroneCommunicationEnvironment:
             association=self.association,
             path_loss_exponent=self.path_loss_exponent
         )
+
         # --------------------------------
         # SINR
         # --------------------------------
-
         sinr = calculate_sinr(
             signal_power,
             interference,
@@ -162,7 +149,6 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # FBL rate
         # --------------------------------
-
         rate = calculate_fbl_rate(
             sinr=sinr,
             bandwidth=self.bandwidth,
@@ -201,16 +187,11 @@ class DroneCommunicationEnvironment:
         )
         return rrb_assignment
 
-
     def calculate_all_metrics(self):
-
         results = {}
 
         for drone_id in self.drones:
-
-            results[drone_id] = (
-                self.calculate_drone_metrics(drone_id)
-            )
+            results[drone_id] = self.calculate_drone_metrics(drone_id)
 
         return results
 
@@ -221,15 +202,12 @@ class DroneCommunicationEnvironment:
         """
 
         power = self.drone_powers[drone_id]
-
         rate = metrics["rate"]
-
         interference = metrics["interference"]
 
         # --------------------------------
         # C1: Power constraint
         # --------------------------------
-  
         power_constraint = (
             self.min_power <= power <= self.max_power
         )
@@ -237,7 +215,6 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # C2: Minimum rate constraint
         # --------------------------------
-
         rate_constraint = (
             rate >= self.min_rate
         )
@@ -253,10 +230,10 @@ class DroneCommunicationEnvironment:
         interference_constraint = (
             neighbor_interference <= self.max_interference
         )
+
         # --------------------------------
         # Overall feasibility
         # --------------------------------
-
         all_constraints_satisfied = (
             power_constraint
             and rate_constraint
