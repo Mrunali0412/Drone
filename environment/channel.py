@@ -29,15 +29,20 @@ def calculate_channel_gain(distance, path_loss_exponent=2.5):
     return gain
 
 
-def calculate_channel_gains(self):
+def calculate_channel_gains(
+    drones,
+    association,
+    orus,
+    path_loss_exponent=2.5
+):
 
     channel_gains = {}
 
-    for drone_id, drone_position in self.drones.items():
+    for drone_id, drone_position in drones.items():
 
-        serving_oru = self.association[drone_id]
+        serving_oru = association[drone_id]
 
-        oru_position = self.orus[serving_oru]
+        oru_position = orus[serving_oru]
 
         distance = calculate_distance(
             drone_position,
@@ -46,7 +51,7 @@ def calculate_channel_gains(self):
 
         gain = calculate_channel_gain(
             distance,
-            self.path_loss_exponent
+            path_loss_exponent
         )
 
         channel_gains[drone_id] = gain

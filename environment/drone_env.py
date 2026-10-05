@@ -1,6 +1,7 @@
 from environment.channel import (
     calculate_distance,
     calculate_channel_gain,
+    calculate_channel_gains,
     calculate_received_power,
     calculate_interference,
     calculate_sinr
@@ -102,34 +103,12 @@ class DroneCommunicationEnvironment:
         # --------------------------------
         # Channel gain
         # --------------------------------
-
+    
         channel_gain = calculate_channel_gain(
             distance,
             self.path_loss_exponent
         )
-
-
-        def calculate_channel_gains(self):
-            channel_gains = {}
-
-            for drone_id, drone_position in self.drones.items():
-
-                serving_oru = self.association[drone_id]
-                oru_position = self.orus[serving_oru]
-
-                distance = calculate_distance(
-                    drone_position,
-                    oru_position
-                )
-
-                channel_gain = calculate_channel_gain(
-                    distance,
-                    self.path_loss_exponent
-                )
-
-                channel_gains[drone_id] = channel_gain
-
-            return channel_gains
+        
         # --------------------------------
         # Desired signal
         # --------------------------------
@@ -185,8 +164,12 @@ class DroneCommunicationEnvironment:
         }
 
     def schedule_rrbs(self):
-
-        channel_gains = self.calculate_channel_gains()
+        channel_gains = calculate_channel_gains(
+            drones=self.drones,
+            association=self.association,
+            orus=self.orus,
+            path_loss_exponent=self.path_loss_exponent
+        )
 
         rrb_assignment = proportional_fair_scheduler(
             drones=self.drones,
@@ -197,6 +180,7 @@ class DroneCommunicationEnvironment:
             average_throughput=self.average_throughput,
             num_rrbs=self.num_rrbs
         )
+        return rrb_assignment
 
 
     def calculate_all_metrics(self):

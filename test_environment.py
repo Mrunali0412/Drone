@@ -1,4 +1,4 @@
-from environment.drone_env import DroneCommunicationEnvironment
+"""from environment.drone_env import DroneCommunicationEnvironment
 
 
 env = DroneCommunicationEnvironment()
@@ -42,4 +42,26 @@ for drone_id, metrics in results.items():
     print(
         f"FBL Rate: "
         f"{metrics['rate']:.2f} bits/s"
+    )
+"""
+
+from environment.drone_env import DroneCommunicationEnvironment
+
+
+env = DroneCommunicationEnvironment()
+
+rrb_assignment = env.schedule_rrbs()
+
+print("=" * 50)
+print("PF RRB SCHEDULING")
+print("=" * 50)
+
+for drone_id, rrb in rrb_assignment.items():
+
+    oru = env.association[drone_id]
+
+    print(
+        f"Drone {drone_id} "
+        f"-> O-RU {oru} "
+        f"-> RRB {rrb}"
     )
