@@ -109,6 +109,53 @@ def calculate_interference(
 
     return interference
 
+#drone to other O-RU
+def calculate_interference_to_neighbors(
+    drone_id,
+    drones,
+    drone_powers,
+    orus,
+    association,
+    path_loss_exponent=2.5
+):
+    """
+    Calculate the interference caused by a drone
+    at neighboring O-RUs.
+
+    The serving O-RU is excluded.
+    """
+
+    serving_oru = association[drone_id]
+
+    interference_to_neighbors = {}
+
+    drone_position = drones[drone_id]
+
+    for oru_id, oru_position in orus.items():
+
+        # Do not consider the serving O-RU
+        if oru_id == serving_oru:
+            continue
+
+        distance = calculate_distance(
+            drone_position,
+            oru_position
+        )
+
+        gain = calculate_channel_gain(
+            distance,
+            path_loss_exponent
+        )
+
+        interference = calculate_received_power(
+            drone_powers[drone_id],
+            gain
+        )
+
+        interference_to_neighbors[oru_id] = interference
+
+    return interference_to_neighbors
+
 def calculate_sinr(signal_power, interference, noise_power):
     """
     SINR = signal / (interference + noise)

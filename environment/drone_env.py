@@ -4,6 +4,7 @@ from environment.channel import (
     calculate_channel_gains,
     calculate_received_power,
     calculate_interference,
+    calculate_interference_to_neighbors,
     calculate_sinr
 )
 
@@ -131,6 +132,16 @@ class DroneCommunicationEnvironment:
             path_loss_exponent=self.path_loss_exponent
         )
 
+
+
+        interference_to_neighbors = calculate_interference_to_neighbors(
+            drone_id=drone_id,
+            drones=self.drones,
+            drone_powers=self.drone_powers,
+            orus=self.orus,
+            association=self.association,
+            path_loss_exponent=self.path_loss_exponent
+        )
         # --------------------------------
         # SINR
         # --------------------------------
@@ -159,6 +170,7 @@ class DroneCommunicationEnvironment:
             "channel_gain": channel_gain,
             "signal_power": signal_power,
             "interference": interference,
+            "interference_to_neighbors": interference_to_neighbors,
             "sinr": sinr,
             "rate": rate
         }
@@ -194,3 +206,60 @@ class DroneCommunicationEnvironment:
             )
 
         return results
+
+    def check_constraints(self, drone_id, metrics):
+        """
+        Check all three optimization constraints
+        for a given drone.
+        """
+
+        power = self.drone_powers[drone_id]
+
+        rate = metrics["rate"]
+
+        interference = metrics["interference"]
+
+        # --------------------------------
+        # C1: Power constraint
+        # --------------------------------
+
+        power_constraint = (
+            self.min_power <= power <= self.max_power
+        )
+
+        # --------------------------------
+        # C2: Minimum rate constraint
+        # --------------------------------
+
+        rate_constraint = (
+            rate >= self.min_rate
+        )
+
+        # --------------------------------
+        # C3: Interference constraint
+        # --------------------------------
+        neighbor_interference = max(
+            metrics["interference_to_neighbors"].values(),
+            default=0.0
+        )
+
+        interference_constraint = (
+            neighbor_interference <= self.max_interference
+        )
+        # --------------------------------
+        # Overall feasibility
+        # --------------------------------
+
+        all_constraints_satisfied = (
+            power_constraint
+            and rate_constraint
+            and interference_constraint
+        )
+
+        return {
+            "power_constraint": power_constraint,
+            "rate_constraint": rate_constraint,
+            "interference_constraint": interference_constraint,
+            "all_constraints_satisfied": all_constraints_satisfied
+        }
+    
