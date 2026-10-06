@@ -73,21 +73,29 @@ def calculate_interference(
     drones,
     drone_powers,
     orus,
+    association,
+    rrb_assignment,
     path_loss_exponent=2.5
 ):
     """
-    Calculate interference received at target_oru
-    from all drones except the serving drone.
+    Sum scheduled, same-RRB transmissions from other cells at target_oru.
+    An unscheduled target has no active reception and returns zero.
     """
 
     interference = 0.0
+    if serving_drone not in rrb_assignment:
+        return interference
+    target_rrb = rrb_assignment[serving_drone]
 
     target_position = orus[target_oru]
 
     for drone_id, drone_position in drones.items():
 
         # Do not count the desired drone's signal as interference
-        if drone_id == serving_drone:
+        if (drone_id == serving_drone
+                or association[drone_id] == target_oru
+                or drone_id not in rrb_assignment
+                or rrb_assignment[drone_id] != target_rrb):
             continue
 
         transmit_power = drone_powers[drone_id]

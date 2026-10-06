@@ -5,7 +5,8 @@ def calculate_pf_metric(
     channel_gain,
     transmit_power,
     noise_power,
-    average_throughput
+    average_throughput,
+    bandwidth=1.0
 ):
     """
     Calculate the proportional-fair scheduling metric.
@@ -15,7 +16,10 @@ def calculate_pf_metric(
 
     The instantaneous rate used for PF scheduling is:
 
-        log2(1 + P * channel_gain / noise)
+        bandwidth * log2(1 + P * channel_gain / noise)
+
+    With bandwidth in Hz, use average throughput in bits/s. The default
+    bandwidth of 1 retains spectral-efficiency units for standalone callers.
 
     """
 
@@ -25,7 +29,7 @@ def calculate_pf_metric(
         transmit_power * channel_gain
     ) / noise_power
 
-    instantaneous_rate = math.log2(1 + snr)
+    instantaneous_rate = bandwidth * math.log2(1 + snr)
 
     pf_metric = (
         instantaneous_rate /
@@ -42,7 +46,8 @@ def proportional_fair_scheduler(
     drone_powers,
     noise_power,
     average_throughput,
-    num_rrbs
+    num_rrbs,
+    bandwidth=1.0
 ):
     """
     Allocate RRBs independently inside each O-RU.
@@ -83,7 +88,8 @@ def proportional_fair_scheduler(
                 channel_gain=channel_gains[drone_id],
                 transmit_power=drone_powers[drone_id],
                 noise_power=noise_power,
-                average_throughput=average_throughput[drone_id]
+                average_throughput=average_throughput[drone_id],
+                bandwidth=bandwidth
             )
 
         # Sort drones from highest PF metric

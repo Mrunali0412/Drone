@@ -1,3 +1,6 @@
+import math
+from numbers import Real
+
 from environment.channel import (
     calculate_distance,
     calculate_channel_gain,
@@ -10,11 +13,19 @@ from environment.channel import (
 
 from environment.rate import calculate_fbl_rate
 from environment.scheduler import proportional_fair_scheduler
+from environment.mobility import DroneMobility
 
 
 class DroneCommunicationEnvironment:
 
-    def __init__(self):
+    def __init__(self, waypoints=None, num_ttis_per_ts=3, throughput_smoothing=0.1):
+
+        if (isinstance(throughput_smoothing, bool)
+                or not isinstance(throughput_smoothing, Real)
+                or not math.isfinite(throughput_smoothing)
+                or not 0 < throughput_smoothing <= 1):
+            raise ValueError("throughput_smoothing must be finite and in (0, 1]")
+        self.throughput_smoothing = throughput_smoothing
 
         # --------------------------------
         # 1. O-RU positions
@@ -35,6 +46,14 @@ class DroneCommunicationEnvironment:
             2: (200, 0, 60),
             3: (220, 20, 60)
         }
+
+        # A missing mission preserves the original stationary scenario.
+        if waypoints is None:
+            waypoints = {drone_id: [position] for drone_id, position in self.drones.items()}
+        if set(waypoints) != set(self.drones):
+            raise ValueError("Waypoints must be provided for exactly drones 0, 1, 2, and 3")
+        self.mobility = DroneMobility(waypoints, num_ttis_per_ts)
+        self.drones = self.mobility.get_all_positions()
 
         # --------------------------------
         # 3. Drone → O-RU association
@@ -83,8 +102,40 @@ class DroneCommunicationEnvironment:
             2: 1.0,
             3: 1.0
         }
+        self.rrb_assignment = None
+
+    @property
+    def time_slot(self):
+        return self.mobility.time_slot
+
+    @property
+    def tti_in_time_slot(self):
+        return self.mobility.tti_in_time_slot
+
+    def advance_tti(self):
+        """Record achieved throughput, then advance to the next TTI.
+
+        History updates once per completed TTI, before movement. Reading
+        metrics or scheduling alone does not update history.
+        Returns whether a time-slot boundary was crossed.
+        """
+        metrics = self.calculate_all_metrics()
+        rho = self.throughput_smoothing
+        self.average_throughput = {
+            drone_id: (1 - rho) * self.average_throughput[drone_id]
+            + rho * result["rate"]
+            for drone_id, result in metrics.items()
+        }
+        slot_changed = self.mobility.advance_tti()
+        self.drones = self.mobility.get_all_positions()
+        self.rrb_assignment = None
+        return slot_changed
 
     def calculate_drone_metrics(self, drone_id):
+
+        if self.rrb_assignment is None:
+            self.schedule_rrbs()
+        scheduled = drone_id in self.rrb_assignment
 
         # Which O-RU serves this drone?
         serving_oru = self.association[drone_id]
@@ -112,7 +163,7 @@ class DroneCommunicationEnvironment:
         # Desired signal
         # --------------------------------
         signal_power = calculate_received_power(
-            self.drone_powers[drone_id],
+            self.drone_powers[drone_id] if scheduled else 0.0,
             channel_gain
         )
 
@@ -125,6 +176,8 @@ class DroneCommunicationEnvironment:
             drones=self.drones,
             drone_powers=self.drone_powers,
             orus=self.orus,
+            association=self.association,
+            rrb_assignment=self.rrb_assignment,
             path_loss_exponent=self.path_loss_exponent
         )
 
@@ -136,6 +189,10 @@ class DroneCommunicationEnvironment:
             association=self.association,
             path_loss_exponent=self.path_loss_exponent
         )
+        if not scheduled:
+            interference_to_neighbors = {
+                oru_id: 0.0 for oru_id in interference_to_neighbors
+            }
 
         # --------------------------------
         # SINR
@@ -159,6 +216,8 @@ class DroneCommunicationEnvironment:
         return {
             "drone_id": drone_id,
             "serving_oru": serving_oru,
+            "scheduled": scheduled,
+            "rrb_id": self.rrb_assignment.get(drone_id),
             "distance": distance,
             "channel_gain": channel_gain,
             "signal_power": signal_power,
@@ -183,8 +242,11 @@ class DroneCommunicationEnvironment:
             drone_powers=self.drone_powers,
             noise_power=self.noise_power,
             average_throughput=self.average_throughput,
-            num_rrbs=self.num_rrbs
+            num_rrbs=self.num_rrbs,
+            bandwidth=self.bandwidth
         )
+        # Freeze this TTI's assignment until explicitly rescheduled or advanced.
+        self.rrb_assignment = rrb_assignment.copy()
         return rrb_assignment
 
     def calculate_all_metrics(self):
@@ -246,4 +308,4 @@ class DroneCommunicationEnvironment:
             "interference_constraint": interference_constraint,
             "all_constraints_satisfied": all_constraints_satisfied
         }
-    
+
