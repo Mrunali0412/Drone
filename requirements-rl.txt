@@ -1,0 +1,2 @@
+# Validated with torch 2.x; environment-only examples use the standard library.
+torch>=2.6,<3
