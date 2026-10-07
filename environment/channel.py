@@ -75,7 +75,8 @@ def calculate_interference(
     orus,
     association,
     rrb_assignment,
-    path_loss_exponent=2.5
+    path_loss_exponent=2.5,
+    channel_gains=None
 ):
     """
     Sum scheduled, same-RRB transmissions from other cells at target_oru.
@@ -110,6 +111,8 @@ def calculate_interference(
             path_loss_exponent
         )
 
+        if channel_gains is not None:
+            gain = channel_gains[drone_id][target_oru]
         received_power = transmit_power * gain
 
         interference += received_power
@@ -123,7 +126,8 @@ def calculate_interference_to_neighbors(
     drone_powers,
     orus,
     association,
-    path_loss_exponent=2.5
+    path_loss_exponent=2.5,
+    channel_gains=None
 ):
     """
     Calculate the interference caused by a drone
@@ -151,6 +155,8 @@ def calculate_interference_to_neighbors(
             path_loss_exponent
         )
 
+        if channel_gains is not None:
+            gain = channel_gains[drone_id][oru_id]
         interference = drone_powers[drone_id] * gain
         interference_to_neighbors[oru_id] = interference
 
